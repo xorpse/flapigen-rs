@@ -168,10 +168,51 @@ pub trait SwigForeignClass {
 
 #[allow(dead_code)]
 pub trait SwigForeignCLikeEnum {
+    fn jni_class() -> jclass;
+    fn jni_value_method() -> jmethodID;
+
     fn as_jint(&self) -> jint;
     /// # Panics
     /// Panics on error
     fn from_jint(_: jint) -> Self;
+}
+
+#[allow(dead_code)]
+fn jobject_to_t<T: SwigForeignClass + Clone>(
+    env: *mut JNIEnv,
+    obj: jobject
+) -> T {
+    let field_id = <T>::jni_class_pointer_field();
+    assert!(!field_id.is_null());
+    let native: &mut T = unsafe {
+        let ptr = (**env).GetLongField.unwrap()(env, obj, field_id);
+        let native = (jlong_to_pointer(ptr) as *mut T).as_mut().unwrap();
+        native
+    };
+    native.clone()
+}
+
+#[allow(dead_code)]
+fn jobject_to_cenum<T: SwigForeignCLikeEnum>(
+    env: *mut JNIEnv,
+    obj: jobject
+) -> Option<T> {
+    let method_id = <T>::jni_value_method();
+    assert!(!method_id.is_null());
+    let obj = unsafe { (**env).NewLocalRef.unwrap()(env, obj) };
+    if obj.is_null() {
+        None
+    } else {
+        let ret: i32 = unsafe {
+            let ret = (**env).CallIntMethod.unwrap()(env, obj, method_id);
+            if (**env).ExceptionCheck.unwrap()(env) != 0 {
+                panic!("Object.getValue failed: catch exception");
+            }
+            (**env).DeleteLocalRef.unwrap()(env, obj);
+            ret
+        };
+        Some(<T>::from_jint(ret))
+    }
 }
 
 #[allow(dead_code)]
@@ -1702,5 +1743,11 @@ foreign_typemap!(
 foreign_typemap!(
     ($p:r_type) <T: SwigForeignCLikeEnum> T <= jint {
         $out = <swig_subst_type!(T)>::from_jint($p);
+    };
+);
+
+foreign_typemap!(
+    ($p:r_type) <T: SwigForeignCLikeEnum> T <= jobject {
+        $out = jobject_to_cenum(env, $p).unwrap();
     };
 );

@@ -111,18 +111,31 @@ It is impossible to use this Java code:{}\nfor callback types conversation",
                 let rust_ret_ty = ctx
                     .conv_map
                     .find_or_alloc_rust_type(&ret_ty, interace.src_id);
-                let f_ret_type = map_type(
+                let mut f_ret_type = map_type(
                     ctx,
                     &rust_ret_ty,
                     Direction::Incoming,
                     rust_ret_ty.src_id_span(),
                 )?;
-                if let Some(conv) = f_ret_type.java_converter {
-                    return Err(DiagnosticError::new2(
+                if let Some(ref conv) = f_ret_type.java_converter {
+                ctx.conv_map
+                    .convert_rust_types(
+                        rust_ret_ty.to_idx(),
+                        jobject_ty.to_idx(),
+                        "x",
+                        "y",
+                        "ret",
                         rust_ret_ty.src_id_span(),
+                    )
+                    .map_err(|err| {
+                        err.add_span_note(
+                            rust_ret_ty.src_id_span(),
                         format!("Java code:\n```{}\n```\n required to convert Rust output type to Java type.
-It is impossible to use for callback function.", conv.converter),
-                    ));
+It is impossible to use for callback function; {:#?}.", conv.converter, f_ret_type),
+                        )
+                    })?;
+                f_ret_type.java_converter = None;
+                f_ret_type.base.correspoding_rust_type = jobject_ty.clone();
                 }
 
                 f_ret_type
@@ -327,6 +340,7 @@ impl SwigFrom<jobject> for Box<dyn {trait_name}> {{
                     "jfloat" => quote!{ CallFloatMethod },
                     "jdouble" => quote!{ CallDoubleMethod },
                     "jobject" => quote!{ CallObjectMethod },
+                    "jstring" => quote!{ CallObjectMethod },
                     _ => return Err(DiagnosticError::new2(jni_ret_type.src_id_span(),
                                                           format!("Have not idea how to handle this type `{}` as return of callback function", jni_ret_type))),
                 };

@@ -154,10 +154,12 @@ impl<'ast> Visit<'ast> for JniCacheMacroCallsVisitor<'ast> {
             if let Some(call) = self.inner.calls.get(&id) {
                 if *call != find_class {
                     println!(
-                        "waring=You use the same id '{}' for different classes '{}' vs '{}'",
+                        "waring=You use the same id '{}' for different classes '{}' vs '{}'; {:?} vs {:?}",
                         id,
                         call.path.value(),
-                        find_class.path.value()
+                        find_class.path.value(),
+                        call,
+                        find_class,
                     );
                     self.errors.push(syn::Error::new(
                         mac.span(),

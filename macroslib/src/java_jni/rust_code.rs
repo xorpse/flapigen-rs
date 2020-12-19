@@ -18,13 +18,13 @@ use crate::{
 
 pub(in crate::java_jni) fn predefined_java_type_to_jni_sig() -> FxHashMap<SmolStr, SmolStr> {
     let mut m = FxHashMap::default();
-    m.insert("String".into(), "Ljava.lang.String;".into());
-    m.insert("Byte".into(), "Ljava.lang.Byte".into());
-    m.insert("Short".into(), "Ljava.lang.Short".into());
-    m.insert("Integer".into(), "Ljava.lang.Integer".into());
-    m.insert("Long".into(), "Ljava.lang.Long".into());
-    m.insert("Float".into(), "Ljava.lang.Float".into());
-    m.insert("Double".into(), "Ljava.lang.Double".into());
+    m.insert("String".into(), "Ljava/lang/String;".into());
+    m.insert("Byte".into(), "Ljava/lang/Byte;".into());
+    m.insert("Short".into(), "Ljava/lang/Short;".into());
+    m.insert("Integer".into(), "Ljava/lang/Integer;".into());
+    m.insert("Long".into(), "Ljava/lang/Long;".into());
+    m.insert("Float".into(), "Ljava/lang/Float;".into());
+    m.insert("Double".into(), "Ljava/lang/Double;".into());
     m.insert("boolean".into(), "Z".into());
     m.insert("byte".into(), "B".into());
     m.insert("char".into(), "C".into());

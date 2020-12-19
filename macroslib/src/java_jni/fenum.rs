@@ -89,7 +89,7 @@ pub(in crate::java_jni) fn generate_enum(
         enum_name.clone().into(),
         format!(
             "L{};",
-            java_class_full_name(&ctx.cfg.package_name, &enum_name)
+            java_class_name_to_jni(&java_class_full_name(&ctx.cfg.package_name, &enum_name)),
         )
         .into(),
     );
@@ -190,8 +190,29 @@ fn generate_rust_code_for_enum(ctx: &mut JavaContext, fenum: &ForeignEnumInfo) -
     let rust_enum_name = &fenum.name;
     let trait_name = syn::Ident::new(C_LIKE_ENUM_TRAIT, Span::call_site());
 
+    let java_enum_full_name = java_class_full_name(&ctx.cfg.package_name, &fenum.name.to_string());
+    let enum_class_name = java_class_name_to_jni(&java_enum_full_name);
+
+    let enum_id_upper = Ident::new(
+        &format!("FOREIGN_ENUM_{}", rust_enum_name.to_string().to_uppercase()),
+        Span::call_site(),
+    );
+    let enum_filed_global_var = Ident::new(
+        &format!("{}_GET_VALUE", enum_id_upper),
+        Span::call_site(),
+    );
+
     ctx.rust_code.push(quote! {
         impl #trait_name for #rust_enum_name {
+            fn jni_class() -> jclass {
+                swig_jni_find_class!(#enum_id_upper, #enum_class_name)
+            }
+
+            fn jni_value_method() -> jmethodID {
+                swig_jni_get_method_id!(#enum_filed_global_var, #enum_id_upper,
+                                        "getValue", "()I")
+            }
+
             fn as_jint(&self) -> jint {
                 match *self {
                     #(#arms_to_jint),*
@@ -247,7 +268,7 @@ fn add_conversation_from_enum_to_jobject_for_callbacks(
         #[allow(dead_code)]
         impl SwigFrom<#enum_type> for jobject {
             fn swig_from(x: #enum_type, env: *mut JNIEnv) -> jobject {
-                let cls: jclass = swig_jni_find_class!(#enum_id_upper, #enum_class_name);
+                let cls: jclass = #enum_type::jni_class();
                 assert!(!cls.is_null());
                 let static_field_id: jfieldID = match x {
                     #(#arms_match_fields_names),*

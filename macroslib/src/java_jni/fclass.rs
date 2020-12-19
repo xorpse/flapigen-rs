@@ -54,7 +54,7 @@ pub(in crate::java_jni) fn generate(ctx: &mut JavaContext, class: &ForeignClassI
         class_name.clone().into(),
         format!(
             "L{};",
-            java_class_full_name(&ctx.cfg.package_name, &class_name)
+            java_class_name_to_jni(&java_class_full_name(&ctx.cfg.package_name, &class_name))
         )
         .into(),
     );
@@ -62,7 +62,7 @@ pub(in crate::java_jni) fn generate(ctx: &mut JavaContext, class: &ForeignClassI
         format!("{} []", class_name).into(),
         format!(
             "[L{};",
-            java_class_full_name(&ctx.cfg.package_name, &class_name)
+            java_class_name_to_jni(&java_class_full_name(&ctx.cfg.package_name, &class_name)),
         )
         .into(),
     );
